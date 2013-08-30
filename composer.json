@@ -1,0 +1,11 @@
+{
+    "name": "org_heigl/devstructure",
+    "type": "composer-installer",
+    "license" : "MIT",
+    "autoload" : {
+        "psr-0": {"Org_Heigl\\": "src/"}
+    },
+    "extra": {
+        "class": "Org_Heigl\\Devstructure\\Composer\\Installer"
+    }
+}
