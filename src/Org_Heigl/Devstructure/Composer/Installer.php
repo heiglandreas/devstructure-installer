@@ -31,6 +31,7 @@
 namespace Org_Heigl\Devstructure\Composer;
 
 use Composer\Installer\LibraryInstaller;
+use Composer\Installer\InstallerInterface;
 use Composer\Package\PackageInterface;
 use Composer\Repository\InstalledRepositoryInterface;
 
@@ -48,7 +49,7 @@ use Composer\Repository\InstalledRepositoryInterface;
  * @since     27.08.13
  * @link      http://dev.mdv.wdv.de/gitlab/mdv/devstructure
  */
-class Installer extends LibraryInstaller
+class Installer extends LibraryInstaller implements InstallerInterface
 {
     /**
      * Path to the folder containing the directory-template
@@ -65,14 +66,14 @@ class Installer extends LibraryInstaller
      *
      * @return bool
      */
-    public function isInstalled(InstalledRepositoryInterface $repo, PackageInterface $package)
-    {
-        return false;
-    }
+//    public function isInstalled(InstalledRepositoryInterface $repo, PackageInterface $package)
+//    {
+//        return false;
+//    }
 
     public function supports($packageType)
     {
-        return 'org_heigl-devstructure' === $packageType;
+        return 'org-heigl-devstructure' === $packageType;
     }
 
 
@@ -84,7 +85,8 @@ class Installer extends LibraryInstaller
      */
     public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
-       return $this->update($repo, null, $package);
+        parent::install($repo, $package);
+       return $this->doSomeWork($repo, $package);
     }
 
     /**
@@ -100,22 +102,28 @@ class Installer extends LibraryInstaller
      *
      * @throws InvalidArgumentException if $initial package is not installed
      */
-    public function update(InstalledRepositoryInterface $repo, PackageInterface $initial, PackageInterface $target)
+//    public function update(InstalledRepositoryInterface $repo, PackageInterface $initial, PackageInterface $target)
+//    {
+//        return $this->doSomeWork($repo, $target);
+//    }
+
+    protected function doSomeWork(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
         $umask = umask(0000);
-        $iterator = new \DirectoryIteratorIterator($this->getTemplatePath($target));
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->getTemplatePath($package)));
         foreach ($iterator as $item) {
-            if ($item->isDot()) {
+            if ('.' === $item->getFilename() || '..' === $item->getFileName()) {
                 continue;
             }
-            $folder = $this->getTargetPath($target, $item);
+            $folder = $this->getMyTargetPath($package, $item);
             if (file_exists($folder) && false == strpos('.dist', $item->getFileName())) {
                 continue;
             }
             if ($item->isDir()) {
-                mkdir($folder, 0000);
+                @mkdir($folder, 0000);
             } else {
-                cp($item->getFilePath(), $folder);
+                @mkdir(dirname($folder),0777, true);
+                @copy($item->getPathName(), $folder);
             }
         }
         umask($umask);
@@ -129,10 +137,10 @@ class Installer extends LibraryInstaller
      * @param InstalledRepositoryInterface $repo    repository in which to check
      * @param PackageInterface             $package package instance
      */
-    public function uninstall(InstalledRepositoryInterface $repo, PackageInterface $package)
-    {
-        //
-    }
+//    public function uninstall(InstalledRepositoryInterface $repo, PackageInterface $package)
+//    {
+//        //
+//    }
 
     /**
      * Get the target path of an SPLFile-Object
@@ -142,20 +150,27 @@ class Installer extends LibraryInstaller
      *
      * @return string
      */
-    protected function getTargetPath(PackageInterface $package, \SplFileInfo $file)
+    protected function getMyTargetPath(PackageInterface $package, \SplFileInfo $file)
     {
 
         $templatePath = $this->getTemplatePath($package);
 
-        $relativeFilePath = substr($file->getPathname(), strlen($templatePath));
+        $relativeFilePath = substr($file->getPathname(), strlen($templatePath)+1);
 
-        return $package->getTargetPath() . DIRECTORY_SEPARATOR . $relativeFilePath;
+        return getcwd() . DIRECTORY_SEPARATOR . $relativeFilePath;
     }
 
     protected function getTemplatePath($package)
     {
-        return $this->getPackageBasePAth($package)
-        . DIRECTORY_SEPARATOR
-        . $this->templatePath;
+        $path = $this->getPackageBasePAth($package)
+              . DIRECTORY_SEPARATOR
+              . $this->templatePath;
+
+        return $path;
     }
+
+//    public function getInstallPath(packageInterface $package)
+//    {
+//        return 'templates';
+//    }
 }

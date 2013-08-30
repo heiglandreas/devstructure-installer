@@ -1,5 +1,5 @@
 {
-    "name": "org_heigl/devstructure",
+    "name": "org_heigl/devstructure-installer",
     "type": "composer-installer",
     "license" : "MIT",
     "autoload" : {
